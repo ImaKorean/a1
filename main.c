@@ -3,17 +3,44 @@
 #include <stdbool.h> // To use bool, true, false
 #include <string.h> 
 // start!
-// I used shift + option + f to format clear (Shift + Alt + F) in window
+// I used shift + option + f to format clear ((Shift + Alt + F) in window)
+
+
+typedef struct Node{
+    int id; // (A=0, B=1....)
+    struct Node *parent;
+    int children[26]; // index of childrens
+    int child_count; //number of childrens
+    int track; // to use DFS
+    bool seen; // check what upper letters is in inputs
+} Node;
+
+// Node lookup table for AtoZ (each index stores the single Node* for that letter)
+static Node *nodes[26];
+
+static Node *new_node(int id){
+    Node *node = (Node*)calloc(1,sizeof *node); // allocate memory for exactly one Node and initialize all fields to 0.
+    if(!node) return NULL; // for error
+    // put initial values
+    node -> id = id;
+    node -> parent = NULL;
+    node -> child_count = 0;
+    node -> track = 0;
+    node -> seen = true; // check true because I have seen it in input
+    return node;
+}
+
+
+
 
 int validate_input(FILE *sf)
 {
     int getletter;
     int count = 0;
+    char a = 0, b = 0;
 
 #ifdef DEBUG
     int line_no = 1;
-    char a = 0;
-    char b = 0;
 #endif
     while (true)
     {
@@ -43,11 +70,21 @@ int validate_input(FILE *sf)
 
 #ifdef DEBUG
             fprintf(stderr, "[DEBUG] line %d: pair=%c%c\n", line_no, a, b);
-            a = b = 0;
+#endif
+
+            if (!add_edge(a, b)) {
+#ifdef DEBUG
+                fprintf(stderr, "[DEBUG] add_edge(%c,%c) failed -> INVALID\n", a, b);
+#endif
+                return EXIT_FAILURE;
+            }
+#ifdef DEBUG
+            fprintf(stderr, "[DEBUG] pair=%c%c added\n", a, b);
             line_no++;
 #endif
             count = 0;
-
+            a = 0; 
+            b = 0;
             if (getletter == EOF)
                 break;
             continue;
@@ -57,7 +94,8 @@ int validate_input(FILE *sf)
             if (getletter < 'A' || getletter > 'Z')
             {
 #ifdef DEBUG
-                fprintf(stderr, "[DEBUG] line %d: non-uppercase char '%c' -> INVALID\n", line_no, (char)getletter);
+                fprintf(stderr, "[DEBUG] line %d: non-uppercase char '%c' -> INVALID\n",
+                        line_no, (char)getletter);
 #endif
                 return EXIT_FAILURE;
             }
@@ -69,12 +107,11 @@ int validate_input(FILE *sf)
                 return EXIT_FAILURE;
             }
 
-#ifdef DEBUG
-            if (count == 0)
+            if (count == 0){
                 a = (char)getletter;
-            else
+            }else{
                 b = (char)getletter;
-#endif
+            }
             count++;
         }
     }
