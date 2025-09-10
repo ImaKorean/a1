@@ -1,9 +1,15 @@
 #include <stdio.h>   //For printf(),scanf(),fopen(),fclose(),fgets()
 #include <stdlib.h>  // To use EXIT_FAILURE, EXIT_SUCCESS, malloc, calloc, realloc, free
 #include <stdbool.h> // To use bool, true, false
-#include <string.h>
+
 // start!
 // I used shift + option + f to format clear ((Shift + Alt + F) in window)
+/*During development I used 
+#ifdef DEBUG blocks for error checking, 
+but before submission I removed all debug/temporary 
+code to improve readability and ensure no unnecessary 
+output remains in the final build.”
+*/
 
 typedef struct Node
 {
@@ -23,7 +29,7 @@ static Node *new_node(int id)
         return NULL; // for error
     // put initial values
     node->id = id;
-    
+
     node->parent = NULL;
     node->child_count = 0;
     return node;
@@ -56,20 +62,6 @@ static bool add_child(Node *parent, int child_id)
     return true;
 }
 
-#ifdef DEBUG
-static void dbg_print_up_chain(Node *n, const char *tag)
-{
-    fprintf(stderr, "[DEBUG] %s: ", tag);
-    for (Node *cur = n; cur; cur = cur->parent)
-    {
-        fprintf(stderr, "%c", 'A' + cur->id);
-        if (cur->parent)
-            fprintf(stderr, " <- ");
-    }
-    fprintf(stderr, "\n");
-}
-#endif
-
 static bool addNodeWithletter(char mom, char son)
 {
     int momid = (int)(mom - 'A'); // make char to int
@@ -89,25 +81,20 @@ static bool addNodeWithletter(char mom, char son)
     // It means child has parents and parents and existed parented is different, which is false.
     if (child->parent && child->parent != parent)
         return false;
-#ifdef DEBUG
-    dbg_print_up_chain(parent, "parent-chain-before-link");
-    dbg_print_up_chain(child, "child-node");
-#endif
 
-    for (Node *cur = parent; cur != NULL; cur = cur->parent)
-    {
-        if (cur == child)
-        {
+    // Start from the candidate parent
+    Node *cur = parent;
 
-#ifdef DEBUG
-            fprintf(stderr, "[DEBUG] CYCLE DETECTED: adding %c->%c makes a loop\n",
-                    'A' + parent->id, 'A' + child->id);
-            // 경로를 보기 좋게 다시 출력
-            dbg_print_up_chain(parent, "loop-path (parent chain contains child)");
-#endif
-            return false; // cycle checking
+    // Go up the ancestor chain until there's no parent 
+    while (cur != NULL) {
+        // if we find the child in this chain, linking parent->child creates a loop
+        if (cur == child) {
+            return false;  // cycle detected
         }
+        // Move one level up
+        cur = cur->parent;
     }
+
     child->parent = parent;
     return add_child(parent, sonid);
 }
@@ -177,54 +164,22 @@ static void print_mytree()
                 }
             }
 
-            printf("\n");// line change in each level
+            printf("\n"); // line change in each level
 
             cn = numOfNode;
-            for (int j = 0; j < cn; j++) cur[j] = next[j];
+            for (int j = 0; j < cn; j++)
+                cur[j] = next[j];
         }
-        
-        printf("\n"); //empty line between trees and another trees or last
-    }
-}
 
-#ifdef DEBUG
-static void dbg_dump_graph(void)
-{
-    fprintf(stderr, "\n==== GRAPH DUMP ====\n");
-    for (int i = 0; i < 26; i++)
-    {
-        Node *n = nodes[i];
-        if (!n)
-            continue; // not created
-        char me = 'A' + n->id;
-        char par = (n->parent ? ('A' + n->parent->id) : '-');
-        fprintf(stderr, "[%c] parent=%c  children=", me, par);
-        if (n->child_count == 0)
-        {
-            fprintf(stderr, "(none)");
-        }
-        else
-        {
-            for (int k = 0; k < n->child_count; k++)
-            {
-                fprintf(stderr, "%c", 'A' + n->children[k]);
-            }
-        }
-        fprintf(stderr, "\n");
+        printf("\n"); // empty line between trees and another trees or last
     }
-    fprintf(stderr, "====================\n\n");
 }
-#endif
 
 int validate_inputs_add_node(FILE *sf)
 {
     int getletter;
     int count = 0;
     char a = 0, b = 0;
-
-#ifdef DEBUG
-    int line_no = 1;
-#endif
 
     while (true)
     {
@@ -235,12 +190,6 @@ int validate_inputs_add_node(FILE *sf)
 
             if (count == 0)
             { // skip empty line
-#ifdef DEBUG
-                if (getletter == '\n')
-                    fprintf(stderr, "[DEBUG] line %d: blank line -> skip\n", line_no++);
-                else
-                    fprintf(stderr, "[DEBUG] EOF after blank line -> skip/finish\n");
-#endif
                 if (getletter == EOF)
                     break;
                 continue;
@@ -248,27 +197,15 @@ int validate_inputs_add_node(FILE *sf)
 
             if (count != 2)
             {
-#ifdef DEBUG
-                fprintf(stderr, "[DEBUG] line %d: count=%d (must be 2) -> INVALID\n", line_no, count);
-#endif
                 return EXIT_FAILURE;
             }
-
-#ifdef DEBUG
-            fprintf(stderr, "[DEBUG] line %d: pair=%c%c\n", line_no, a, b);
-#endif
 
             if (!addNodeWithletter(a, b))
             {
-#ifdef DEBUG
-                fprintf(stderr, "[DEBUG] add_edge(%c,%c) failed -> INVALID\n", a, b);
-#endif
+
                 return EXIT_FAILURE;
             }
-#ifdef DEBUG
-            fprintf(stderr, "[DEBUG] pair=%c%c added\n", a, b);
-            line_no++;
-#endif
+
             count = 0;
             a = 0;
             b = 0;
@@ -280,17 +217,10 @@ int validate_inputs_add_node(FILE *sf)
         {
             if (getletter < 'A' || getletter > 'Z')
             {
-#ifdef DEBUG
-                fprintf(stderr, "[DEBUG] line %d: non-uppercase char '%c' -> INVALID\n",
-                        line_no, (char)getletter);
-#endif
                 return EXIT_FAILURE;
             }
             if (count >= 2)
             {
-#ifdef DEBUG
-                fprintf(stderr, "[DEBUG] line %d: too many chars in line -> INVALID\n", line_no);
-#endif
                 return EXIT_FAILURE;
             }
 
@@ -325,21 +255,6 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
-#ifdef DEBUG
-    {
-        int sf;
-        while ((sf = fgetc(storeFile)) != EOF)
-        {
-            fputc(sf, stderr);
-        }
-        fprintf(stderr, "\n");
-        if (fseek(storeFile, 0, SEEK_SET) != 0)
-        {
-            perror("fseek");
-        }
-    }
-#endif
-
     int result = validate_inputs_add_node(storeFile);
     fclose(storeFile);
 
@@ -349,10 +264,6 @@ int main(int argc, char **argv)
         free_nodes();
         return EXIT_SUCCESS;
     }
-
-#ifdef DEBUG
-    dbg_dump_graph();
-#endif
 
     print_mytree();
     free_nodes();
