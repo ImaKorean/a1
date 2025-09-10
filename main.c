@@ -121,8 +121,19 @@ static void insertion(int *child, int numChild)
 
 static void print_mytree()
 {
-    for (int i = 0; i < 26; i++)
+    //getting root
+    int roots[26];
+    int remain = 0;// check how root left
+    for (int t = 0; t < 26; t++) {
+        //node is existed, and that node has no parent. it is root.
+        if (nodes[t] && nodes[t]->parent == NULL) {
+            roots[remain++] = t;
+        }
+    }
+
+    for (int r = 0; r < remain; r++)
     {
+        int i = roots[r];
         Node *root = nodes[i];
         if (!root || root->parent) // if it is not root, skip
             continue;
@@ -164,7 +175,6 @@ static void print_mytree()
                 }
             }
 
-
             printf("\n"); // line change in each level
 
             cn = numOfNode;
@@ -173,8 +183,10 @@ static void print_mytree()
         }
 
         // empty line between trees and another trees or last
+        if (r < remain - 1) printf("\n");
     }
 }
+
 
 int validate_inputs_add_node(FILE *sf)
 {
