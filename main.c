@@ -164,6 +164,7 @@ static void print_mytree()
                 }
             }
 
+
             printf("\n"); // line change in each level
 
             cn = numOfNode;
