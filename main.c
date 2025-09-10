@@ -23,6 +23,7 @@ static Node *new_node(int id)
         return NULL; // for error
     // put initial values
     node->id = id;
+    
     node->parent = NULL;
     node->child_count = 0;
     return node;
